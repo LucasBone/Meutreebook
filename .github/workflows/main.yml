@@ -1,29 +1,58 @@
-name: Criar APK TreeBook
-on: [push, pull_request]
+name: Build Test APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      PATH: ${{ github.workspace }}/.local/bin:$PATH
 
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Instalar dependências
-        run: |
-          sudo apt update
-          sudo apt install -y python3-pip build-essential git python3 dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
-          pip3 install --user --upgrade buildozer cython==0.29.33
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
 
-      - name: Fabricar o APK com Buildozer
+      - name: Instalar dependências do sistema
         run: |
-          yes | buildozer init
-          sed -i 's/package.name = myapp/package.name = treebook/' buildozer.spec
-          sed -i 's/# icon.filename = %(source.dir)s\/data\/icon.png/icon.filename = %(source.dir)s\/icon.png/' buildozer.spec
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential git openjdk-11-jdk python3-pip unzip zip \
+            libssl-dev zlib1g-dev libncurses5-dev libffi-dev liblzma-dev \
+            libsqlite3-dev libbz2-dev libjpeg-dev libfreetype6-dev \
+            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+            libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev ffmpeg
+
+      - name: Instalar Buildozer e Cython
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install --user --upgrade buildozer cython==0.29.33
+          echo "::add-path::${HOME}/.local/bin"
+
+      - name: Preparar buildozer.spec (se não existir)
+        run: |
+          if [ ! -f buildozer.spec ]; then
+            yes | buildozer init
+          fi
+          # Não sobrescreve se já existir; o repositório pode conter buildozer.spec
+
+      - name: Construir APK com Buildozer
+        run: |
+          export PATH=$HOME/.local/bin:$PATH
           buildozer -v android debug
+        timeout-minutes: 120
 
-      - name: Upload do APK Pronto
+      - name: Upload do APK pronto
         uses: actions/upload-artifact@v4
         with:
-          name: TreeBook-APK
+          name: treebook-apk
           path: bin/*.apk
