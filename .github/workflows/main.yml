@@ -14,7 +14,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Instalar dependências do sistema
+      - name: Instalar dependências
         run: |
           sudo apt update
           sudo apt install -y build-essential git python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good
@@ -25,18 +25,17 @@ jobs:
 
       - name: Criar APK
         run: |
-          # Inicia o arquivo de configuração
           /home/runner/.local/bin/buildozer init
-          
-          # Configura os nomes dentro do arquivo .spec automaticamente
+          # Ajustes automáticos para evitar erros comuns
           sed -i 's/package.name = myapp/package.name = treebook/' buildozer.spec
           sed -i 's/package.domain = org.test/package.domain = br.lucas/' buildozer.spec
           sed -i 's/# icon.filename = %(source.dir)s\/data\/icon.png/icon.filename = %(source.dir)s\/icon.png/' buildozer.spec
+          # Forçar o Android SDK 33 que é mais estável no GitHub
+          sed -i 's/#android.api = 31/android.api = 33/' buildozer.spec
           
-          # Comando para fabricar o APK (aceitando as licenças do Android)
           yes | /home/runner/.local/bin/buildozer -v android debug
 
-      - name: Upload do APK Pronto
+      - name: Upload do APK
         uses: actions/upload-artifact@v4
         with:
           name: TreeBook-APK
