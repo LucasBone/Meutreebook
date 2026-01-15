@@ -1,24 +1,46 @@
-name: Criar APK
-on: [push]
+name: Criar APK TreeBook
+on: [push, pull_request]
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Instalar Buildozer
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Instalar dependências
         run: |
           sudo apt update
-          sudo apt install -y python3-pip build-essential git python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev zlib1g-dev
-          pip install --user --upgrade buildozer cython==0.29.33
-      - name: Gerar APK
+          sudo apt install -y build-essential git python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good
+          pip install --user --upgrade buildozer cython==0.29.33 wheel
+
+      - name: Criar APK
         run: |
+          # Remove arquivos de tentativas anteriores para não dar conflito
+          rm -rf .buildozer
           rm -f buildozer.spec
+          
+          # Inicia um novo arquivo de configuração
           /home/runner/.local/bin/buildozer init
+          
+          # Ajusta as configurações críticas
           sed -i 's/package.name = myapp/package.name = treebook/' buildozer.spec
+          sed -i 's/package.domain = org.test/package.domain = br.lucas/' buildozer.spec
           sed -i 's/# icon.filename = %(source.dir)s\/data\/icon.png/icon.filename = %(source.dir)s\/icon.png/' buildozer.spec
+          sed -i 's/android.api = 31/android.api = 33/' buildozer.spec
+          sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
+          
+          # Comando de fabricação real
           yes | /home/runner/.local/bin/buildozer -v android debug
-      - name: Subir arquivo
+
+      - name: Upload do APK
         uses: actions/upload-artifact@v4
         with:
-          name: App-Pronto
+          name: TreeBook-APK
           path: bin/*.apk
