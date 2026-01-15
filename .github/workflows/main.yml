@@ -13,20 +13,17 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y python3-pip build-essential git python3 dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
-          sudo apt install -y libgstreamer1.0 libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-extravital gstreamer1.0-libav
           pip3 install --user --upgrade buildozer cython==0.29.33
 
       - name: Fabricar o APK com Buildozer
         run: |
           yes | buildozer init
-          # Ajusta o nome do app e do arquivo no spec automaticamente
           sed -i 's/package.name = myapp/package.name = treebook/' buildozer.spec
-          sed -i 's/package.domain = org.test/package.domain = br.lucas/' buildozer.spec
           sed -i 's/# icon.filename = %(source.dir)s\/data\/icon.png/icon.filename = %(source.dir)s\/icon.png/' buildozer.spec
           buildozer -v android debug
 
       - name: Upload do APK Pronto
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: TreeBook-APK
           path: bin/*.apk
