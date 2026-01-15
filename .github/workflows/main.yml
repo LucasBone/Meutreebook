@@ -22,22 +22,18 @@ jobs:
 
       - name: Criar APK
         run: |
-          # Remove arquivos de tentativas anteriores para não dar conflito
-          rm -rf .buildozer
           rm -f buildozer.spec
-          
-          # Inicia um novo arquivo de configuração
           /home/runner/.local/bin/buildozer init
           
-          # Ajusta as configurações críticas
+          # Ajustes manuais no arquivo de configuração
           sed -i 's/package.name = myapp/package.name = treebook/' buildozer.spec
           sed -i 's/package.domain = org.test/package.domain = br.lucas/' buildozer.spec
           sed -i 's/# icon.filename = %(source.dir)s\/data\/icon.png/icon.filename = %(source.dir)s\/icon.png/' buildozer.spec
           sed -i 's/android.api = 31/android.api = 33/' buildozer.spec
-          sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
           
-          # Comando de fabricação real
+          # Comando para rodar com as permissões do GitHub
           yes | /home/runner/.local/bin/buildozer -v android debug
+        continue-on-error: false
 
       - name: Upload do APK
         uses: actions/upload-artifact@v4
